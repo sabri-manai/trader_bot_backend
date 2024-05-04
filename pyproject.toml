@@ -1,0 +1,25 @@
+[tool.poetry]
+name = "trader-bot"
+version = "0.1.0"
+description = ""
+authors = ["sabri-manai <sabri.manai@medtech.tn>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = ">=3.9"
+requests = "^2.31.0"
+pandas = "^2.2.2"
+textblob = "^0.18.0.post0"
+bs4 = "^0.0.2"
+numpy = "^1.26.4"
+matplotlib = "^3.8.4"
+iexfinance = "^0.5.0"
+flask = "^3.0.3"
+flask-cors = "^4.0.0"
+tensorflow = "^2.16.1"
+scikit-learn = "^1.4.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
