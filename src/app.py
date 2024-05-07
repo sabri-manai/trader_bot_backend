@@ -1,6 +1,6 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
-from datetime import datetime
+from datetime import datetime, timezone, timedelta
 from iexfinance.stocks import Stock
 from config.config import API_KEY
 
@@ -18,13 +18,30 @@ CORS(app)
 @app.route('/api/news/<ticker>', methods=['GET'])
 def get_news(ticker):
     token = API_KEY
-    start_date = datetime(2024, 5, 1)
-    end_date = datetime(2024, 5, 4)
     stock = Stock(ticker, token=token)
-    news = stock.get_news(range="1y")
-    news.index = pd.to_datetime(news.index, unit='ms')
-    news_filtered = news[(news.index >= start_date) & (news.index <= end_date)]
-    result = news_filtered.to_dict(orient="records")
+    try:
+        news_df = stock.get_news(last=30)
+        print(news_df.columns)  # Verify column names
+
+        # Assuming the timestamp is the index or under a different column name
+        if 'datetime' not in news_df.columns:
+            news_df.reset_index(inplace=True)  # Reset index in case the timestamp is in the index
+            news_df.rename(columns={'index': 'datetime'}, inplace=True)  # Rename if necessary
+
+        news_df['datetime'] = pd.to_datetime(news_df['datetime'], unit='ms', utc=True)
+
+        today = datetime.now(timezone.utc).date()
+        start_of_today = datetime(today.year, today.month, today.day, tzinfo=timezone.utc)
+        end_of_today = start_of_today + timedelta(days=1)
+
+        # Filter news from today
+        news_filtered = news_df[(news_df['datetime'] >= start_of_today) & (news_df['datetime'] < end_of_today)]
+        result = news_filtered.to_dict(orient='records')
+
+    except Exception as e:
+        print(f"Error: {str(e)}")
+        return jsonify({"error": str(e)}), 500
+
     return jsonify(result)
 
 @app.route('/api/chart/<ticker>', methods=['GET'])
