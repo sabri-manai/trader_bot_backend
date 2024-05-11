@@ -1,3 +1,3 @@
 import os
 
-API_KEY = "sk_cc39b5d2b57c469caa46a75ebe20fb61"
+API_KEY = "sk_c972e798def74d7c97857c3b12b5868e"

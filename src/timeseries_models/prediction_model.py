@@ -38,17 +38,3 @@ class StockPredictor:
         else:
             raise ValueError("Model has not been trained yet.")
 
-@app.route('/api/predict/<ticker>', methods=['GET'])
-def predict_close(ticker):
-    token = API_KEY
-    stock = Stock(ticker, token=token)
-    historical_data = stock.get_historical_prices()
-
-    predictor = StockPredictor()
-    predictor.train(historical_data)
-    predicted_close = predictor.predict()
-
-    return jsonify({"predicted_close": predicted_close})
-
-if __name__ == '__main__':
-    app.run(debug=True)

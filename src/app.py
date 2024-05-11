@@ -3,14 +3,12 @@ from flask_cors import CORS
 from datetime import datetime, timezone, timedelta
 from iexfinance.stocks import Stock
 from config.config import API_KEY
+import logging
 
 import pandas as pd
-from textblob import TextBlob
 
-from nlp_models.sentiment_analysis_model import SentimentAnalysisModel
-
+from nlp.news_sentiment_predictor import NewsSentimentPredictor
 from timeseries_models.prediction_model import StockPredictor
-# from timeseries_models.lstm_stock_predictor import LSTMStockPredictor
 
 app = Flask(__name__)
 CORS(app)
@@ -82,27 +80,38 @@ def predict_close(ticker):
 
     return jsonify({"predicted_close": predicted_close})
 
-@app.route('/api/predict_sentiment/<ticker>', methods=['GET'])
-def predict_sentiment_close(ticker):
-    token = API_KEY
-    stock = Stock(ticker, token=token)
-    historical_data = stock.get_historical_prices()
-    news_data = stock.get_news(range="1y").to_dict(orient="records")
+# Initialize and train model
+predictor = NewsSentimentPredictor()
+# Normally here you would load your training data and train the model
+# For example:
+# predictor.train(["some news text"], [1])  # Assuming '1' is a label for 'rise'
 
-    predictor = SentimentAnalysisModel()
-    features, target = predictor.preprocess(historical_data, news_data)
-    predictor.train(features, target)
+def fetch_news_for_prediction(ticker):
+    stock = Stock(ticker, token=API_KEY)
+    news_df = stock.get_news(last=30)
+    if 'datetime' not in news_df.columns:
+        news_df.reset_index(inplace=True)
+        news_df.rename(columns={'index': 'datetime'}, inplace=True)
+    news_df['datetime'] = pd.to_datetime(news_df['datetime'], unit='ms', utc=True)
+    return news_df
 
-    # Ensure there are headlines to analyze
-    if len(news_data) > 0:
-        latest_headline = news_data[0]['headline']
-        latest_sentiment = TextBlob(latest_headline).sentiment.polarity
-        prediction = predictor.predict(latest_sentiment)
-        return jsonify({"sentiment_prediction": prediction})
-    else:
-        return jsonify({"error": "No news headlines available for analysis"})
+@app.route('/api/predict/news/<ticker>', methods=['GET'])
+def predict_news_impact(ticker):
+    try:
+        news_df = fetch_news_for_prediction(ticker)
+        today = datetime.now(timezone.utc).date()
+        start_of_today = datetime(today.year, today.month, today.day, tzinfo=timezone.utc)
+        news_filtered = news_df[(news_df['datetime'] >= start_of_today)]
 
+        if news_filtered.empty:
+            return jsonify({"error": "No relevant news found for today."}), 404
 
+        sentiment = predictor.preprocess(news_filtered)
+        prediction = predictor.predict(news_filtered['headline'].iloc[0])  # Predicting based on the first headline
+        return jsonify({"sentiment": sentiment, "prediction": prediction})
+    except Exception as e:
+        print(f"Error in predict_news_impact: {str(e)}")
+        return jsonify({"error": str(e)}), 500
 
 if __name__ == '__main__':
     app.run(debug=True)
