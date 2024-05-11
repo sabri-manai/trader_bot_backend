@@ -2,7 +2,8 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from datetime import datetime, timezone, timedelta
 from iexfinance.stocks import Stock
-from config.config import API_KEY
+from os import getenv
+
 import logging
 
 import pandas as pd
@@ -12,6 +13,8 @@ from timeseries_models.prediction_model import StockPredictor
 
 app = Flask(__name__)
 CORS(app)
+
+API_KEY = getenv("API_KEY")
 
 @app.route('/api/news/<ticker>', methods=['GET'])
 def get_news(ticker):
