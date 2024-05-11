@@ -7,13 +7,14 @@ from vaderSentiment.vaderSentiment import SentimentIntensityAnalyzer
 from flask import Flask, jsonify
 from iexfinance.stocks import Stock
 from datetime import datetime, timezone
-from config.config import API_KEY
+from os import getenv
 
 class NewsSentimentPredictor:
     def __init__(self):
         self.vectorizer = CountVectorizer()
         self.model = RandomForestClassifier(n_estimators=100, random_state=42)
         self.sentiment_analyzer = SentimentIntensityAnalyzer()
+        API_KEY = getenv("API_KEY")
 
     def train(self, X, y):
         X_train_vect = self.vectorizer.fit_transform(X)

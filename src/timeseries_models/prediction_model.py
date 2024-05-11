@@ -2,7 +2,7 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from iexfinance.stocks import Stock
 from sklearn.ensemble import RandomForestRegressor
-from config.config import API_KEY
+from os import getenv
 
 import pandas as pd
 import numpy as np
@@ -11,11 +11,13 @@ app = Flask(__name__)
 CORS(app)
 
 class StockPredictor:
+
     def __init__(self):
         # Initialize with RandomForestRegressor instead of LinearRegression
         self.model = RandomForestRegressor(n_estimators=100, random_state=42)  # More trees can be better
         self.X = None
         self.y = None
+        API_KEY = getenv("API_KEY")
 
     def train(self, historical_data):
         # Prepare the data
